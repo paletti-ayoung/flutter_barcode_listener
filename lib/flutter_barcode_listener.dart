@@ -28,8 +28,7 @@ class BarcodeKeyboardListener extends StatefulWidget {
         super(key: key);
 
   @override
-  _BarcodeKeyboardListenerState createState() =>
-      _BarcodeKeyboardListenerState(
+  _BarcodeKeyboardListenerState createState() => _BarcodeKeyboardListenerState(
         _onBarcodeScanned,
         _bufferDuration,
         useKeyDownEvent,
@@ -63,6 +62,14 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
     RawKeyboard.instance.addListener(_keyBoardCallback);
     _keyboardSubscription =
         _controller.stream.where((char) => char != null).listen(onKeyEvent);
+  }
+  @override
+  void initState() {
+    _onBarcodeScannedCallback("testtest1");
+     Future.delayed(Duration(milliseconds: 400), () {
+      _onBarcodeScannedCallback("testtest2");
+    });
+    
   }
 
   void onKeyEvent(String? char) {
@@ -123,11 +130,9 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
       } else if (keyEvent.data.logicalKey == LogicalKeyboardKey.enter) {
         _controller.sink.add(lineFeed);
       } else if (keyEvent.data is RawKeyEventDataWeb) {
-        _controller.sink
-            .add((keyEvent.data as RawKeyEventDataWeb).keyLabel);
+        _controller.sink.add((keyEvent.data as RawKeyEventDataWeb).keyLabel);
       } else if (keyEvent.data is RawKeyEventDataLinux) {
-        _controller.sink
-            .add((keyEvent.data as RawKeyEventDataLinux).keyLabel);
+        _controller.sink.add((keyEvent.data as RawKeyEventDataLinux).keyLabel);
       } else if (keyEvent.data is RawKeyEventDataWindows) {
         _controller.sink.add(String.fromCharCode(
             (keyEvent.data as RawKeyEventDataWindows).keyCode));
@@ -135,8 +140,7 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
         _controller.sink
             .add((keyEvent.data as RawKeyEventDataMacOs).characters);
       } else if (keyEvent.data is RawKeyEventDataIos) {
-        _controller.sink
-            .add((keyEvent.data as RawKeyEventDataIos).characters);
+        _controller.sink.add((keyEvent.data as RawKeyEventDataIos).characters);
       } else {
         _controller.sink.add(keyEvent.character);
       }

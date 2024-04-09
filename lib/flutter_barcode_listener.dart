@@ -102,8 +102,10 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
 
   void onKeyEvent(String? char) {
     checkPendingCharCodesToClear();
-    
+    print(char);
+    print(lineFeed);
     if (char == lineFeed) {
+      
       if (_scannedChars.isNotEmpty && _isWithinScanInterval()) {
         print("연속연속?");
         _onContinuousScanCallback?.call(_scannedChars);

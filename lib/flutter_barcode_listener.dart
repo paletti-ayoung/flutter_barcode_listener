@@ -1,114 +1,92 @@
-library flutter_barcode_listener;
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 typedef BarcodeScannedCallback = void Function(String barcode);
-typedef ContinuousScanCallback = void Function(String barcodes);
+typedef ContinuousScanCallback = void Function(List<String> barcodes);
 
-/// This widget will listen for raw PHYSICAL keyboard events
-/// even when other controls have primary focus.
-/// It will buffer all characters coming in specifed `bufferDuration` time frame
-/// that end with line feed character and call callback function with result.
-/// Keep in mind this widget will listen for events even when not visible.
-/// Windows seems to be using the [RawKeyDownEvent] instead of the
-/// [RawKeyUpEvent], this behaviour can be managed by setting [useKeyDownEvent].
 class BarcodeKeyboardListener extends StatefulWidget {
   final Widget child;
   final BarcodeScannedCallback _onBarcodeScanned;
   final Duration _bufferDuration;
+  final ContinuousScanCallback? _onContinuousScanCallback;
   final bool useKeyDownEvent;
-  
+  final Duration _scanInterval;
 
-  /// Make barcode scanner return case sensitive characters
-  ///
-  /// Default value is false, It will sent scanned barcode with case sensitive
-  /// characters. It listen to [LogicalKeyboardKey.shiftLeft]
-  /// Currently support for Android
-  final bool caseSensitive;
-
-  /// This widget will listen for raw PHYSICAL keyboard events
-  /// even when other controls have primary focus.
-  /// It will buffer all characters coming in specifed `bufferDuration` time frame
-  /// that end with line feed character and call callback function with result.
-  /// Keep in mind this widget will listen for events even when not visible.
-  BarcodeKeyboardListener(
-      {Key? key,
-
-      /// Child widget to be displayed.
-      required this.child,
-      ContinuousScanCallback? onContinuousScan,
-      /// Callback to be called when barcode is scanned.
-      required Function(String) onBarcodeScanned,
-
-      /// When experiencing issueswith empty barcodes on Windows,
-      /// set this value to true. Default value is `false`.
-      this.useKeyDownEvent = false,
-      
-      /// Maximum time between two key events.
-      /// If time between two key events is longer than this value
-      /// previous keys will be ignored.
-      Duration bufferDuration = hundredMs,
-      this.caseSensitive = false,
-      })
-      : _onBarcodeScanned = onBarcodeScanned,
+  BarcodeKeyboardListener({
+    Key? key,
+    required this.child,
+    required Function(String) onBarcodeScanned,
+    ContinuousScanCallback? onContinuousScan,
+    this.useKeyDownEvent = false,
+    Duration bufferDuration = const Duration(milliseconds: 300),
+    this._scanInterval = const Duration(milliseconds: 500),
+  })  : _onBarcodeScanned = onBarcodeScanned,
+        _onContinuousScanCallback = onContinuousScan,
         _bufferDuration = bufferDuration,
-         _onContinuousScanCallback = onContinuousScan,
         super(key: key);
-final ContinuousScanCallback? _onContinuousScanCallback;
+
   @override
-  _BarcodeKeyboardListenerState createState() => _BarcodeKeyboardListenerState(
-      _onBarcodeScanned, _bufferDuration, useKeyDownEvent, caseSensitive
+  _BarcodeKeyboardListenerState createState() =>
+      _BarcodeKeyboardListenerState(
+        _onBarcodeScanned,
+        _bufferDuration,
+        useKeyDownEvent,
+        _onContinuousScanCallback,
+        _scanInterval,
       );
 }
 
-const Duration aSecond = Duration(seconds: 1);
-const Duration hundredMs = Duration(milliseconds: 100);
 const String lineFeed = '\n';
 
 class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
   List<String> _scannedChars = [];
   DateTime? _lastScannedCharCodeTime;
   late StreamSubscription<String?> _keyboardSubscription;
-final ContinuousScanCallback _onContinuousScanCallback;
-  List<String> _continuousScans = [];
 
   final BarcodeScannedCallback _onBarcodeScannedCallback;
+  final ContinuousScanCallback? _onContinuousScanCallback;
   final Duration _bufferDuration;
+  final bool _useKeyDownEvent;
+  final Duration _scanInterval;
 
   final _controller = StreamController<String?>();
 
-  final bool _useKeyDownEvent;
-
-  final bool _caseSensitive;
-
-  bool _isShiftPressed = false;
-
-  _BarcodeKeyboardListenerState(this._onBarcodeScannedCallback,
-      this._bufferDuration, this._useKeyDownEvent, this._caseSensitive, this._onContinuousScanCallback,) {
+  _BarcodeKeyboardListenerState(
+    this._onBarcodeScannedCallback,
+    this._bufferDuration,
+    this._useKeyDownEvent,
+    this._onContinuousScanCallback,
+    this._scanInterval,
+  ) {
     RawKeyboard.instance.addListener(_keyBoardCallback);
     _keyboardSubscription =
         _controller.stream.where((char) => char != null).listen(onKeyEvent);
   }
 
   void onKeyEvent(String? char) {
-    //remove any pending characters older than bufferDuration value
     checkPendingCharCodesToClear();
-    
-   if (_continuousScans.isNotEmpty && _onContinuousScanCallback != null) {
-      _onContinuousScanCallback!(_continuousScans);
-      _continuousScans = [];
-    }
 
     if (char == lineFeed) {
-      _onBarcodeScannedCallback.call(_scannedChars.join());
+      if (_scannedChars.isNotEmpty && _isWithinScanInterval()) {
+        _onContinuousScanCallback?.call(_scannedChars);
+      }
+      _resetScanInterval();
+      _onBarcodeScannedCallback(_scannedChars.join());
       resetScannedCharCodes();
     } else {
-      //add character to list of scanned characters;
       _scannedChars.add(char!);
     }
+  }
+
+  bool _isWithinScanInterval() {
+    return _lastScannedCharCodeTime != null &&
+        DateTime.now().difference(_lastScannedCharCodeTime!) <= _scanInterval;
+  }
+
+  void _resetScanInterval() {
+    _lastScannedCharCodeTime = DateTime.now();
   }
 
   void checkPendingCharCodesToClear() {
@@ -125,48 +103,40 @@ final ContinuousScanCallback _onContinuousScanCallback;
     _scannedChars = [];
   }
 
-  void addScannedCharCode(String charCode) {
-    _scannedChars.add(charCode);
-  }
-
   void _keyBoardCallback(RawKeyEvent keyEvent) {
     if (keyEvent.logicalKey.keyId > 255 &&
         keyEvent.data.logicalKey != LogicalKeyboardKey.enter &&
         keyEvent.data.logicalKey != LogicalKeyboardKey.shiftLeft) return;
+
     if ((!_useKeyDownEvent && keyEvent is RawKeyUpEvent) ||
         (_useKeyDownEvent && keyEvent is RawKeyDownEvent)) {
       if (keyEvent.data is RawKeyEventDataAndroid) {
         if (keyEvent.data.logicalKey == LogicalKeyboardKey.shiftLeft) {
-          _isShiftPressed = true;
+          // Handle shift key if needed
         } else {
-          if (_isShiftPressed && _caseSensitive) {
-            _isShiftPressed = false;
-            _controller.sink.add(String.fromCharCode(
-                ((keyEvent.data) as RawKeyEventDataAndroid).codePoint).toUpperCase());
-          } else {
-            _controller.sink.add(String.fromCharCode(
-                ((keyEvent.data) as RawKeyEventDataAndroid).codePoint));
-          }
+          _controller.sink.add(String.fromCharCode(
+              (keyEvent.data as RawKeyEventDataAndroid).codePoint));
         }
       } else if (keyEvent.data is RawKeyEventDataFuchsia) {
         _controller.sink.add(String.fromCharCode(
-            ((keyEvent.data) as RawKeyEventDataFuchsia).codePoint));
+            (keyEvent.data as RawKeyEventDataFuchsia).codePoint));
       } else if (keyEvent.data.logicalKey == LogicalKeyboardKey.enter) {
         _controller.sink.add(lineFeed);
       } else if (keyEvent.data is RawKeyEventDataWeb) {
-        _controller.sink.add(((keyEvent.data) as RawKeyEventDataWeb).keyLabel);
+        _controller.sink
+            .add((keyEvent.data as RawKeyEventDataWeb).keyLabel);
       } else if (keyEvent.data is RawKeyEventDataLinux) {
         _controller.sink
-            .add(((keyEvent.data) as RawKeyEventDataLinux).keyLabel);
+            .add((keyEvent.data as RawKeyEventDataLinux).keyLabel);
       } else if (keyEvent.data is RawKeyEventDataWindows) {
         _controller.sink.add(String.fromCharCode(
-            ((keyEvent.data) as RawKeyEventDataWindows).keyCode));
+            (keyEvent.data as RawKeyEventDataWindows).keyCode));
       } else if (keyEvent.data is RawKeyEventDataMacOs) {
         _controller.sink
-            .add(((keyEvent.data) as RawKeyEventDataMacOs).characters);
+            .add((keyEvent.data as RawKeyEventDataMacOs).characters);
       } else if (keyEvent.data is RawKeyEventDataIos) {
         _controller.sink
-            .add(((keyEvent.data) as RawKeyEventDataIos).characters);
+            .add((keyEvent.data as RawKeyEventDataIos).characters);
       } else {
         _controller.sink.add(keyEvent.character);
       }

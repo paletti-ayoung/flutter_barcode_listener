@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 typedef BarcodeScannedCallback = void Function(String barcode);
+typedef ContinuousScanCallback = void Function(List<String> barcodes);
 
 /// This widget will listen for raw PHYSICAL keyboard events
 /// even when other controls have primary focus.
@@ -19,6 +20,7 @@ class BarcodeKeyboardListener extends StatefulWidget {
   final BarcodeScannedCallback _onBarcodeScanned;
   final Duration _bufferDuration;
   final bool useKeyDownEvent;
+  
 
   /// Make barcode scanner return case sensitive characters
   ///
@@ -37,14 +39,14 @@ class BarcodeKeyboardListener extends StatefulWidget {
 
       /// Child widget to be displayed.
       required this.child,
-
+      ContinuousScanCallback? onContinuousScan,
       /// Callback to be called when barcode is scanned.
       required Function(String) onBarcodeScanned,
 
       /// When experiencing issueswith empty barcodes on Windows,
       /// set this value to true. Default value is `false`.
       this.useKeyDownEvent = false,
-
+      
       /// Maximum time between two key events.
       /// If time between two key events is longer than this value
       /// previous keys will be ignored.
@@ -53,11 +55,13 @@ class BarcodeKeyboardListener extends StatefulWidget {
       })
       : _onBarcodeScanned = onBarcodeScanned,
         _bufferDuration = bufferDuration,
+         _onContinuousScanCallback = onContinuousScan,
         super(key: key);
-
+final ContinuousScanCallback? _onContinuousScanCallback;
   @override
   _BarcodeKeyboardListenerState createState() => _BarcodeKeyboardListenerState(
-      _onBarcodeScanned, _bufferDuration, useKeyDownEvent, caseSensitive);
+      _onBarcodeScanned, _bufferDuration, useKeyDownEvent, caseSensitive
+      );
 }
 
 const Duration aSecond = Duration(seconds: 1);
@@ -68,6 +72,8 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
   List<String> _scannedChars = [];
   DateTime? _lastScannedCharCodeTime;
   late StreamSubscription<String?> _keyboardSubscription;
+final ContinuousScanCallback _onContinuousScanCallback;
+  List<String> _continuousScans = [];
 
   final BarcodeScannedCallback _onBarcodeScannedCallback;
   final Duration _bufferDuration;
@@ -81,7 +87,7 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
   bool _isShiftPressed = false;
 
   _BarcodeKeyboardListenerState(this._onBarcodeScannedCallback,
-      this._bufferDuration, this._useKeyDownEvent, this._caseSensitive) {
+      this._bufferDuration, this._useKeyDownEvent, this._caseSensitive, this._onContinuousScanCallback,) {
     RawKeyboard.instance.addListener(_keyBoardCallback);
     _keyboardSubscription =
         _controller.stream.where((char) => char != null).listen(onKeyEvent);
@@ -90,7 +96,12 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
   void onKeyEvent(String? char) {
     //remove any pending characters older than bufferDuration value
     checkPendingCharCodesToClear();
-    _lastScannedCharCodeTime = DateTime.now();
+    
+   if (_continuousScans.isNotEmpty && _onContinuousScanCallback != null) {
+      _onContinuousScanCallback!(_continuousScans);
+      _continuousScans = [];
+    }
+
     if (char == lineFeed) {
       _onBarcodeScannedCallback.call(_scannedChars.join());
       resetScannedCharCodes();

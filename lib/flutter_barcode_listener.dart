@@ -63,9 +63,11 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
     _keyboardSubscription =
         _controller.stream.where((char) => char != null).listen(onKeyEvent);
   }
+
   @override
   void initState() {
     print("test!!!!");
+
     onKeyEvent("test11");
     onKeyEvent("test11");
     onKeyEvent("test11");
@@ -73,6 +75,7 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
     onKeyEvent("test11");
     Future.delayed(Duration(milliseconds: 400), () {
       print("test!!!!2222");
+
       onKeyEvent("test222");
       onKeyEvent("test222");
       onKeyEvent("test222");
@@ -83,6 +86,7 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
 
     Future.delayed(Duration(milliseconds: 600), () {
       print("test!!!!33333");
+
       onKeyEvent("test33");
       onKeyEvent("test33");
       onKeyEvent("test33");
@@ -94,11 +98,11 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
   }
 
   void onKeyEvent(String? char) {
-    print(char);
     checkPendingCharCodesToClear();
 
     if (char == lineFeed) {
       if (_scannedChars.isNotEmpty && _isWithinScanInterval()) {
+        print("연속연속?");
         _onContinuousScanCallback?.call(_scannedChars);
       }
       _resetScanInterval();

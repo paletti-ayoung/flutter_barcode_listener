@@ -70,8 +70,8 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
     onKeyEvent("\n");
 
     Future.delayed(Duration(milliseconds: 300), () {
-        onKeyEvent("test11\n");
-        onKeyEvent("\n");
+      onKeyEvent("test11\n");
+      onKeyEvent("\n");
     });
 
     Future.delayed(Duration(milliseconds: 600), () {
@@ -82,6 +82,7 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
 
   void onKeyEvent(String? char) {
     checkPendingCharCodesToClear();
+    print(char == lineFeed);
     if (char == lineFeed) {
       if (_scannedChars.isNotEmpty && _isWithinScanInterval()) {
         print("연속연속?");

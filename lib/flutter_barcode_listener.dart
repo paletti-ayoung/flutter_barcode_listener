@@ -67,37 +67,27 @@ class _BarcodeKeyboardListenerState extends State<BarcodeKeyboardListener> {
   @override
   void initState() {
 
-    onKeyEvent("test11");
-    onKeyEvent("test11");
-    onKeyEvent("test11");
-    onKeyEvent("test11");
-    onKeyEvent("test11");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
 
     Future.delayed(Duration(milliseconds: 300), () {
-      print("400");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
+         onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
 
     });
 
     Future.delayed(Duration(milliseconds: 600), () {
-      print("600");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
-      onKeyEvent("test11");
+       onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
+    onKeyEvent("test11\n");
     });
   }
 

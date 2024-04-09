@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 typedef BarcodeScannedCallback = void Function(String barcode);
-typedef ContinuousScanCallback = void Function(List<String> barcodes);
+typedef ContinuousScanCallback = void Function(String barcodes);
 
 /// This widget will listen for raw PHYSICAL keyboard events
 /// even when other controls have primary focus.

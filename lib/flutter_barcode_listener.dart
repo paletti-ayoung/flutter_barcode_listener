@@ -12,7 +12,7 @@ class BarcodeKeyboardListener extends StatefulWidget {
   final Duration _bufferDuration;
   final ContinuousScanCallback? _onContinuousScanCallback;
   final bool useKeyDownEvent;
-  final Duration _scanInterval;
+  final Duration scanInterval;
 
   BarcodeKeyboardListener({
     Key? key,
@@ -21,7 +21,7 @@ class BarcodeKeyboardListener extends StatefulWidget {
     ContinuousScanCallback? onContinuousScan,
     this.useKeyDownEvent = false,
     Duration bufferDuration = const Duration(milliseconds: 300),
-    this._scanInterval = const Duration(milliseconds: 500),
+    this.scanInterval = const Duration(milliseconds: 500),
   })  : _onBarcodeScanned = onBarcodeScanned,
         _onContinuousScanCallback = onContinuousScan,
         _bufferDuration = bufferDuration,
@@ -34,7 +34,7 @@ class BarcodeKeyboardListener extends StatefulWidget {
         _bufferDuration,
         useKeyDownEvent,
         _onContinuousScanCallback,
-        _scanInterval,
+        scanInterval,
       );
 }
 
